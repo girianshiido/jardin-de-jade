@@ -1,0 +1,28 @@
+{
+  "name": "Jardin de Jade — Mahjong solitaire",
+  "short_name": "Jardin de Jade",
+  "description": "Quinze jardins de Mahjong aux formes variées et aux voies entrelacées.",
+  "lang": "fr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#082c2b",
+  "theme_color": "#082c2b",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
