@@ -43,6 +43,7 @@ import {
   boardBounds,
   layout,
   isFree,
+  facesMatch,
   type Tile,
   type Pair,
 } from './game/engine';
@@ -335,7 +336,7 @@ export default function Home() {
     const previous = game.tiles.find((t) => t.id === selected);
     if (
       previous &&
-      previous.face === tile.face &&
+      facesMatch(previous.face, tile.face) &&
       isFree(previous, game.tiles)
     ) {
       const pair: Pair = [previous.id, tile.id];

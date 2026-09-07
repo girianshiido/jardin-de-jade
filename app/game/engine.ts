@@ -483,12 +483,27 @@ export const FACES = [
   'dot-4',
   'dot-5',
   'dot-6',
+  'dot-7',
+  'dot-8',
+  'dot-9',
   'bamboo-1',
   'bamboo-2',
   'bamboo-3',
   'bamboo-4',
   'bamboo-5',
   'bamboo-6',
+  'bamboo-7',
+  'bamboo-8',
+  'bamboo-9',
+  'character-1',
+  'character-2',
+  'character-3',
+  'character-4',
+  'character-5',
+  'character-6',
+  'character-7',
+  'character-8',
+  'character-9',
   'east',
   'south',
   'west',
@@ -496,7 +511,34 @@ export const FACES = [
   'red',
   'green',
   'white',
+  'flower-plum',
+  'flower-orchid',
+  'flower-chrysanthemum',
+  'flower-bamboo',
+  'season-spring',
+  'season-summer',
+  'season-autumn',
+  'season-winter',
 ];
+const REGULAR_FACES = FACES.filter(
+  (face) => !face.startsWith('flower-') && !face.startsWith('season-'),
+);
+type FacePair = [string, string];
+const FACE_PAIRS: FacePair[] = [
+  ...REGULAR_FACES.map((face): FacePair => [face, face]),
+  ['flower-plum', 'flower-orchid'],
+  ['flower-chrysanthemum', 'flower-bamboo'],
+  ['season-spring', 'season-summer'],
+  ['season-autumn', 'season-winter'],
+];
+export function faceGroup(face: string) {
+  if (face.startsWith('flower-')) return 'flowers';
+  if (face.startsWith('season-')) return 'seasons';
+  return face;
+}
+export function facesMatch(a: string, b: string) {
+  return faceGroup(a) === faceGroup(b);
+}
 export function random(seed: number) {
   return () => {
     seed |= 0;
@@ -548,7 +590,8 @@ export function matchingPairs(tiles: Tile[]): Pair[] {
   const pairs: Pair[] = [];
   for (let i = 0; i < free.length; i++)
     for (let j = i + 1; j < free.length; j++)
-      if (free[i].face === free[j].face) pairs.push([free[i].id, free[j].id]);
+      if (facesMatch(free[i].face, free[j].face))
+        pairs.push([free[i].id, free[j].id]);
   return pairs;
 }
 export function removePair(tiles: Tile[], pair: Pair): Tile[] {
@@ -558,7 +601,7 @@ export function removePair(tiles: Tile[], pair: Pair): Tile[] {
     !a ||
     !b ||
     a.id === b.id ||
-    a.face !== b.face ||
+    !facesMatch(a.face, b.face) ||
     !isFree(a, tiles) ||
     !isFree(b, tiles)
   )
@@ -611,7 +654,7 @@ export function geometrySolution(
   }
   return null;
 }
-export function deal(tiles: Tile[], faces: string[], rng: () => number) {
+export function deal(tiles: Tile[], facePairs: FacePair[], rng: () => number) {
   let board = tiles.map((t) => ({ ...t }));
   let rearranged = false;
   let solution = geometrySolution(board, rng);
@@ -636,39 +679,53 @@ export function deal(tiles: Tile[], faces: string[], rng: () => number) {
     rearranged = true;
   }
   if (!solution) throw new Error('Impossible de redistribuer ce plateau.');
-  const assigned = shuffled(faces, rng);
+  const assigned = shuffled(facePairs, rng);
   const map = new Map<number, string>();
-  solution.forEach((pair, i) => pair.forEach((id) => map.set(id, assigned[i])));
+  solution.forEach((pair, i) => {
+    map.set(pair[0], assigned[i][0]);
+    map.set(pair[1], assigned[i][1]);
+  });
   board = board.map((t) => (t.removed ? t : { ...t, face: map.get(t.id)! }));
   return { tiles: board, solution, rearranged };
 }
 export function createGame(level: number, seed: number) {
   const tiles = layout(level);
   const rng = random(seed);
-  const variety = shuffled(FACES, rng).slice(
+  const variety = shuffled(FACE_PAIRS, rng).slice(
     0,
-    Math.min(FACES.length, 5 + level),
+    Math.min(FACE_PAIRS.length, 5 + level * 3),
+  );
+  const regularRepeats = shuffled(
+    REGULAR_FACES.map((face): FacePair => [face, face]),
+    rng,
   );
   return deal(
     tiles,
-    Array.from(
-      { length: tiles.length / 2 },
-      (_, i) => variety[i % variety.length],
+    Array.from({ length: tiles.length / 2 }, (_, i) =>
+      i < variety.length
+        ? variety[i]
+        : regularRepeats[(i - variety.length) % regularRepeats.length],
     ),
     rng,
   );
 }
 export function reshuffle(tiles: Tile[], seed: number) {
-  const counts = new Map<string, number>();
+  const rng = random(seed);
+  const groups = new Map<string, string[]>();
   tiles
     .filter((t) => !t.removed)
-    .forEach((t) => counts.set(t.face, (counts.get(t.face) ?? 0) + 1));
-  const faces: string[] = [];
-  counts.forEach((count, face) => {
-    if (count % 2) throw new Error('Paire incomplète');
-    for (let i = 0; i < count / 2; i++) faces.push(face);
+    .forEach((t) => {
+      const group = faceGroup(t.face);
+      groups.set(group, [...(groups.get(group) ?? []), t.face]);
+    });
+  const pairs: FacePair[] = [];
+  groups.forEach((groupFaces) => {
+    if (groupFaces.length % 2) throw new Error('Paire incomplète');
+    const ordered = shuffled(groupFaces, rng);
+    for (let i = 0; i < ordered.length; i += 2)
+      pairs.push([ordered[i], ordered[i + 1]]);
   });
-  return deal(tiles, faces, random(seed));
+  return deal(tiles, pairs, rng);
 }
 export function boardBounds(tiles: Tile[]) {
   const minX = Math.min(...tiles.map((t) => t.x));

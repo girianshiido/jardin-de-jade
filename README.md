@@ -2,6 +2,8 @@
 
 Mahjong solitaire en français, écrit en TypeScript avec React. Quinze jardins aux silhouettes propres, de 20 à 102 tuiles et de une à quatre couches. Seule la Clairière I est accessible au départ. Sa réussite ouvre deux voies : Clairière II et Papillon I. Les chemins proposent ensuite ponts, ailes, sentiers, sanctuaires, spirales, îles et labyrinthe avant de converger vers le Palais de jade. Les jardins déjà débloqués peuvent être rejoués.
 
+Le jeu utilise les **42 motifs** du Mahjong : cercles, bambous et caractères de 1 à 9, quatre vents, trois dragons, quatre fleurs et quatre saisons. Les inscriptions visibles sur les tuiles sont chinoises ; leurs noms français restent annoncés par l’interface et les lecteurs d’écran. Comme dans le Mahjong solitaire traditionnel, toutes les fleurs s’associent entre elles, de même que toutes les saisons.
+
 ## Jouer
 
 - Cliquez ou touchez deux tuiles identiques. Une tuile est libre si aucune autre ne la recouvre et si son côté gauche ou droit est dégagé.

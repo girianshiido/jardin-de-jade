@@ -3,6 +3,8 @@ export function faceLabel(face: string) {
     return `${face.split('-')[1]} cercle${face === 'dot-1' ? '' : 's'}`;
   if (face.startsWith('bamboo-'))
     return `${face.split('-')[1]} bambou${face === 'bamboo-1' ? '' : 's'}`;
+  if (face.startsWith('character-'))
+    return `${face.split('-')[1]} caractère${face === 'character-1' ? '' : 's'}`;
   return (
     (
       {
@@ -13,6 +15,14 @@ export function faceLabel(face: string) {
         red: 'Dragon rouge',
         green: 'Dragon vert',
         white: 'Dragon blanc',
+        'flower-plum': 'Fleur de prunier',
+        'flower-orchid': 'Fleur d’orchidée',
+        'flower-chrysanthemum': 'Fleur de chrysanthème',
+        'flower-bamboo': 'Fleur de bambou',
+        'season-spring': 'Printemps',
+        'season-summer': 'Été',
+        'season-autumn': 'Automne',
+        'season-winter': 'Hiver',
       } as Record<string, string>
     )[face] ?? face
   );
@@ -49,9 +59,76 @@ const coords: Record<number, number[][]> = {
     [20, 63],
     [44, 63],
   ],
+  7: [
+    [20, 18],
+    [44, 18],
+    [20, 38],
+    [44, 38],
+    [20, 58],
+    [44, 58],
+    [32, 70],
+  ],
+  8: [
+    [20, 16],
+    [44, 16],
+    [20, 34],
+    [44, 34],
+    [20, 52],
+    [44, 52],
+    [20, 70],
+    [44, 70],
+  ],
+  9: [
+    [17, 21],
+    [32, 21],
+    [47, 21],
+    [17, 43],
+    [32, 43],
+    [47, 43],
+    [17, 65],
+    [32, 65],
+    [47, 65],
+  ],
 };
+const CHINESE_NUMERALS = [
+  '',
+  '一',
+  '二',
+  '三',
+  '四',
+  '五',
+  '六',
+  '七',
+  '八',
+  '九',
+];
+const HONORS: Record<string, { symbol: string; kind: string; color: string }> =
+  {
+    east: { symbol: '東', kind: '風', color: '#254d66' },
+    south: { symbol: '南', kind: '風', color: '#254d66' },
+    west: { symbol: '西', kind: '風', color: '#254d66' },
+    north: { symbol: '北', kind: '風', color: '#254d66' },
+    red: { symbol: '中', kind: '龍', color: '#af4035' },
+    green: { symbol: '發', kind: '龍', color: '#276b50' },
+  };
+const BONUS_TILES: Record<
+  string,
+  { symbol: string; kind: string; color: string }
+> = {
+  'flower-plum': { symbol: '梅', kind: '花', color: '#a83c57' },
+  'flower-orchid': { symbol: '蘭', kind: '花', color: '#7c4c99' },
+  'flower-chrysanthemum': { symbol: '菊', kind: '花', color: '#b27624' },
+  'flower-bamboo': { symbol: '竹', kind: '花', color: '#337254' },
+  'season-spring': { symbol: '春', kind: '季', color: '#3f7b52' },
+  'season-summer': { symbol: '夏', kind: '季', color: '#b34832' },
+  'season-autumn': { symbol: '秋', kind: '季', color: '#a46d24' },
+  'season-winter': { symbol: '冬', kind: '季', color: '#356b8a' },
+};
+const CHINESE_FONT = "'Songti SC', 'STSong', 'Noto Serif CJK SC', serif";
 export function TileFace({ face }: { face: string }) {
   const number = Number(face.split('-')[1]);
+  const honor = HONORS[face];
+  const bonus = BONUS_TILES[face];
   const color =
     number % 3 === 0 ? '#a8473c' : number % 2 === 0 ? '#245b85' : '#236653';
   return (
@@ -94,56 +171,54 @@ export function TileFace({ face }: { face: string }) {
             />
           </g>
         ))}
-      {!number && face !== 'white' && (
+      {face.startsWith('character-') && (
+        <>
+          <text
+            x="32"
+            y="43"
+            textAnchor="middle"
+            fill="#263f5a"
+            fontSize="29"
+            fontFamily={CHINESE_FONT}
+            fontWeight="600"
+          >
+            {CHINESE_NUMERALS[number]}
+          </text>
+          <text
+            x="32"
+            y="70"
+            textAnchor="middle"
+            fill="#af4035"
+            fontSize="25"
+            fontFamily={CHINESE_FONT}
+            fontWeight="600"
+          >
+            萬
+          </text>
+        </>
+      )}
+      {honor && (
         <>
           <text
             x="32"
             y="55"
             textAnchor="middle"
-            fill={
-              face === 'red'
-                ? '#af4035'
-                : face === 'green'
-                  ? '#276b50'
-                  : '#254d66'
-            }
+            fill={honor.color}
             fontSize="36"
-            fontFamily="serif"
+            fontFamily={CHINESE_FONT}
             fontWeight="600"
           >
-            {
-              (
-                {
-                  east: '東',
-                  south: '南',
-                  west: '西',
-                  north: '北',
-                  red: '中',
-                  green: '發',
-                } as Record<string, string>
-              )[face]
-            }
+            {honor.symbol}
           </text>
           <text
             x="32"
-            y="71"
+            y="72"
             textAnchor="middle"
             fill="#77715c"
-            fontSize="7"
-            letterSpacing="2"
+            fontSize="9"
+            fontFamily={CHINESE_FONT}
           >
-            {
-              (
-                {
-                  east: 'EST',
-                  south: 'SUD',
-                  west: 'OUEST',
-                  north: 'NORD',
-                  red: 'DRAGON',
-                  green: 'DRAGON',
-                } as Record<string, string>
-              )[face]
-            }
+            {honor.kind}
           </text>
         </>
       )}
@@ -169,6 +244,48 @@ export function TileFace({ face }: { face: string }) {
             stroke="#245b85"
             strokeWidth="1"
           />
+          <text
+            x="32"
+            y="76"
+            textAnchor="middle"
+            fill="#245b85"
+            fontSize="8"
+            fontFamily={CHINESE_FONT}
+          >
+            白
+          </text>
+        </>
+      )}
+      {bonus && (
+        <>
+          <path
+            d="M15 64Q25 54 32 63Q39 54 49 64"
+            fill="none"
+            stroke={bonus.color}
+            strokeWidth="1.4"
+            opacity=".65"
+          />
+          <text
+            x="32"
+            y="53"
+            textAnchor="middle"
+            fill={bonus.color}
+            fontSize="34"
+            fontFamily={CHINESE_FONT}
+            fontWeight="600"
+          >
+            {bonus.symbol}
+          </text>
+          <text
+            x="32"
+            y="74"
+            textAnchor="middle"
+            fill="#77715c"
+            fontSize="9"
+            fontFamily={CHINESE_FONT}
+          >
+            {bonus.kind}
+          </text>
         </>
       )}
     </svg>

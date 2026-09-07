@@ -10,6 +10,7 @@ import {
   LEVELS,
   layout,
   FACES,
+  facesMatch,
   type Tile,
 } from '../app/game/engine.ts';
 import {
@@ -86,6 +87,30 @@ void test('A tile needs a clear top and at least one clear side', () => {
   assert.equal(isFree(stacked[0], stacked), false);
   assert.equal(isFree(stacked[3], stacked), true);
   assert.equal(isFree({ ...board[0], removed: true }, board), false);
+});
+void test('The complete Mahjong collection is available with traditional bonus matching', () => {
+  assert.equal(FACES.length, 42);
+  for (const face of [
+    'dot-9',
+    'bamboo-9',
+    'character-9',
+    'flower-plum',
+    'season-winter',
+  ])
+    assert.ok(FACES.includes(face));
+  assert.equal(facesMatch('flower-plum', 'flower-orchid'), true);
+  assert.equal(facesMatch('season-spring', 'season-winter'), true);
+  assert.equal(facesMatch('flower-plum', 'season-spring'), false);
+  assert.equal(facesMatch('character-8', 'character-9'), false);
+  const flowers = [
+    tile(0, 0, 0, 0, 'flower-plum'),
+    tile(1, 2, 0, 0, 'flower-orchid'),
+  ];
+  assert.ok(removePair(flowers, [0, 1]).every((item) => item.removed));
+  assert.deepEqual(
+    new Set(createGame(14, 86).tiles.map((item) => item.face)),
+    new Set(FACES),
+  );
 });
 void test('All fifteen levels and 750 deals can be cleared using their legal certificate', () => {
   let checked = 0;

@@ -5,6 +5,7 @@ import {
   matchingPairs,
   LEVELS,
   FACES,
+  faceGroup,
   type Tile,
   type Pair,
 } from './engine.ts';
@@ -151,7 +152,8 @@ function validTiles(value: unknown): value is Tile[] {
       const pos = `${t.x},${t.y},${t.z}`;
       if (positions.has(pos)) return false;
       positions.add(pos);
-      counts.set(t.face, (counts.get(t.face) ?? 0) + 1);
+      const group = faceGroup(t.face);
+      counts.set(group, (counts.get(group) ?? 0) + 1);
     }
   }
   return [...counts.values()].every((n) => n % 2 === 0);
