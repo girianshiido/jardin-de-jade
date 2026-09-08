@@ -60,6 +60,40 @@ const coords: Record<number, number[][]> = {
     [44, 63],
   ],
   7: [
+    [20, 15],
+    [44, 15],
+    [20, 36],
+    [44, 36],
+    [20, 57],
+    [44, 57],
+    [32, 73],
+  ],
+  8: [
+    [20, 14],
+    [44, 14],
+    [20, 33],
+    [44, 33],
+    [20, 52],
+    [44, 52],
+    [20, 71],
+    [44, 71],
+  ],
+  9: [
+    [15, 19],
+    [32, 19],
+    [49, 19],
+    [15, 43],
+    [32, 43],
+    [49, 43],
+    [15, 67],
+    [32, 67],
+    [49, 67],
+  ],
+};
+
+const bambooCoords: Record<number, number[][]> = {
+  ...coords,
+  7: [
     [20, 18],
     [44, 18],
     [20, 38],
@@ -69,14 +103,14 @@ const coords: Record<number, number[][]> = {
     [32, 70],
   ],
   8: [
-    [20, 16],
-    [44, 16],
-    [20, 34],
-    [44, 34],
-    [20, 52],
-    [44, 52],
-    [20, 70],
-    [44, 70],
+    [20, 13],
+    [44, 13],
+    [20, 33],
+    [44, 33],
+    [20, 53],
+    [44, 53],
+    [20, 73],
+    [44, 73],
   ],
   9: [
     [17, 21],
@@ -131,6 +165,8 @@ export function TileFace({ face }: { face: string }) {
   const bonus = BONUS_TILES[face];
   const color =
     number % 3 === 0 ? '#a8473c' : number % 2 === 0 ? '#245b85' : '#236653';
+  const dotRadius = number >= 7 ? 6.7 : number === 1 ? 16 : 8;
+  const dotInnerRadius = number >= 7 ? 3.7 : number === 1 ? 11 : 4.5;
   return (
     <svg viewBox="0 0 64 86" className="tile-face" aria-hidden="true">
       <path
@@ -143,8 +179,8 @@ export function TileFace({ face }: { face: string }) {
       {face.startsWith('dot-') &&
         coords[number].map(([x, y], i) => (
           <g key={i} fill="none" stroke={color}>
-            <circle cx={x} cy={y} r={number === 1 ? 16 : 8} strokeWidth="2.5" />
-            <circle cx={x} cy={y} r={number === 1 ? 11 : 4.5} strokeWidth="1" />
+            <circle cx={x} cy={y} r={dotRadius} strokeWidth="2.5" />
+            <circle cx={x} cy={y} r={dotInnerRadius} strokeWidth="1" />
             <circle cx={x} cy={y} r="1.8" fill={color} />
             {number === 1 && (
               <path
@@ -155,7 +191,7 @@ export function TileFace({ face }: { face: string }) {
           </g>
         ))}
       {face.startsWith('bamboo-') &&
-        coords[number].map(([x, y], i) => (
+        bambooCoords[number].map(([x, y], i) => (
           <g
             key={i}
             stroke={i === 2 ? '#a8473c' : '#236653'}

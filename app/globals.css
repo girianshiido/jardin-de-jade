@@ -165,6 +165,10 @@ button svg {
   flex-shrink: 0;
 }
 .tile {
+  --tile-edge-y: 4px;
+  --tile-base-y: 7px;
+  --tile-cast-y: 10px;
+  --tile-cast-blur: 9px;
   position: absolute;
   padding: 0;
   border: 1px solid #fffcdf;
@@ -172,15 +176,21 @@ button svg {
   /* Keep an opaque base while hover/selection replaces the gradient. */
   background: #eee8d3 linear-gradient(135deg, #fffdf0 10%, #eee8d3 90%);
   box-shadow:
-    1px 4px 0 #b0a587,
-    2px 7px 0 #356852,
-    3px 10px 9px #001b2266;
+    1px var(--tile-edge-y) 0 #b0a587,
+    2px var(--tile-base-y) 0 #356852,
+    3px var(--tile-cast-y) var(--tile-cast-blur) #001b2266;
   transition:
     filter 0.18s,
     box-shadow 0.18s,
     background-color 0.18s;
   user-select: none;
   -webkit-user-select: none;
+}
+.tile:not([data-layer='0']) {
+  --tile-edge-y: 3px;
+  --tile-base-y: 5px;
+  --tile-cast-y: 6px;
+  --tile-cast-blur: 5px;
 }
 .tile-face {
   width: 100%;
@@ -195,17 +205,17 @@ button svg {
   background: #fff9d9;
   box-shadow:
     0 0 0 2px #e4ca8c,
-    1px 4px 0 #b0a587,
-    2px 7px 0 #356852,
-    3px 10px 9px #001b2266;
+    1px var(--tile-edge-y) 0 #b0a587,
+    2px var(--tile-base-y) 0 #356852,
+    3px var(--tile-cast-y) var(--tile-cast-blur) #001b2266;
 }
 .tile.selected {
   background: #f6e3a8;
   box-shadow:
-    0 0 0 3px #ffdc80,
-    0 0 25px #ffd46d99,
-    2px 7px 0 #577e58;
-  filter: brightness(1.1);
+    inset 0 0 0 3px #ffdc80,
+    1px var(--tile-edge-y) 0 #b0a587,
+    2px var(--tile-base-y) 0 #356852,
+    3px var(--tile-cast-y) var(--tile-cast-blur) #001b2266;
 }
 .board-message {
   min-height: 20px;
@@ -420,6 +430,12 @@ footer {
   display: grid;
   place-items: center;
   border: 1px solid #fae2a2;
+  opacity: 0;
+  visibility: hidden;
+}
+.tile.selected .selected-check {
+  opacity: 1;
+  visibility: visible;
 }
 .selected-check svg {
   width: 11px;
@@ -833,7 +849,7 @@ footer {
   50% {
     box-shadow:
       0 0 20px #ffe58b99,
-      2px 7px 0 #577e58;
+      2px var(--tile-base-y) 0 #577e58;
   }
 }
 @keyframes pair-away {

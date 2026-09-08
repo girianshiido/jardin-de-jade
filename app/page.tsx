@@ -70,6 +70,8 @@ const formatTime = (s: number) =>
     .toString()
     .padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 type Panel = 'help' | 'levels' | 'pause' | 'restart' | 'install' | null;
+const TILE_LAYER_OFFSET_X = -5;
+const TILE_LAYER_OFFSET_Y = 7;
 type InstallPrompt = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -102,8 +104,8 @@ function MiniBoard({ level }: { level: number }) {
       {tiles.map((t) => (
         <rect
           key={t.id}
-          x={(t.x - bounds.minX) * 15 + 4 + t.z * 1.2}
-          y={(t.y - bounds.minY) * 14 + 4 - t.z}
+          x={(t.x - bounds.minX) * 15 + 7 - t.z * 1.8}
+          y={(t.y - bounds.minY) * 14 + 4 - t.z * 1.5}
           width="13"
           height="12"
           rx="2"
@@ -520,6 +522,7 @@ export default function Home() {
                   type="button"
                   data-tile-id={tile.id}
                   data-face={tile.face}
+                  data-layer={tile.z}
                   aria-label={`${faceLabel(tile.face)}, ${freeIds.has(tile.id) ? 'libre' : 'bloquée'}, étage ${tile.z + 1}`}
                   aria-pressed={selected === tile.id}
                   aria-disabled={!freeIds.has(tile.id) || paused}
@@ -527,19 +530,17 @@ export default function Home() {
                   onClick={() => pick(tile)}
                   className={`tile ${freeIds.has(tile.id) ? 'free' : 'blocked'} ${selected === tile.id ? 'selected' : ''} ${hint?.includes(tile.id) ? 'hinted' : ''} ${vanishing?.includes(tile.id) ? 'vanishing' : ''}`}
                   style={{
-                    left: `${((14 + (tile.x - bounds.minX) * 72 + tile.z * 3) / bounds.width) * 100}%`,
-                    top: `${((22 + (tile.y - bounds.minY) * 90 - tile.z * 5) / bounds.height) * 100}%`,
+                    left: `${((20 + (tile.x - bounds.minX) * 72 + tile.z * TILE_LAYER_OFFSET_X) / bounds.width) * 100}%`,
+                    top: `${((22 + (tile.y - bounds.minY) * 90 - tile.z * TILE_LAYER_OFFSET_Y) / bounds.height) * 100}%`,
                     width: `${(66 / bounds.width) * 100}%`,
                     height: `${(84 / bounds.height) * 100}%`,
                     zIndex: tile.z * 1000 + tile.y * 10 + tile.x,
                   }}
                 >
                   <TileFace face={tile.face} />
-                  {selected === tile.id && (
-                    <span className="selected-check">
-                      <Check size={11} />
-                    </span>
-                  )}
+                  <span className="selected-check" aria-hidden="true">
+                    <Check size={11} />
+                  </span>
                 </button>
               ))}
             {won && (
