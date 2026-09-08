@@ -69,6 +69,13 @@ const formatTime = (s: number) =>
   `${Math.floor(s / 60)
     .toString()
     .padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+const pairFoundMessage = (firstFace: string, secondFace: string) => {
+  if (firstFace.startsWith('season-') && secondFace.startsWith('season-'))
+    return `Paire de saisons trouvée : ${faceLabel(firstFace)} et ${faceLabel(secondFace)} !`;
+  if (firstFace.startsWith('flower-') && secondFace.startsWith('flower-'))
+    return `Paire de fleurs trouvée : ${faceLabel(firstFace)} et ${faceLabel(secondFace)} !`;
+  return `Paire trouvée : ${faceLabel(secondFace)} !`;
+};
 type Panel = 'help' | 'levels' | 'pause' | 'restart' | 'install' | null;
 const TILE_LAYER_OFFSET_X = -5;
 const TILE_LAYER_OFFSET_Y = 7;
@@ -346,7 +353,7 @@ export default function Home() {
       setVanishing(pair);
       setSelected(null);
       playSound(remaining === 2 ? 'win' : 'match');
-      setMessage(`Paire de ${faceLabel(tile.face).toLowerCase()} trouvée !`);
+      setMessage(pairFoundMessage(previous.face, tile.face));
       actionTimer.current = setTimeout(() => {
         dispatch({ type: 'match', pair });
         if (remaining === 2) {
