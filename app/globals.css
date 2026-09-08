@@ -201,13 +201,24 @@ button svg {
 .tile.blocked {
   filter: brightness(0.76) saturate(0.75);
 }
-.tile.free:hover {
+.tile.free:active {
   background: #fff9d9;
-  box-shadow:
-    0 0 0 2px #e4ca8c,
-    1px var(--tile-edge-y) 0 #b0a587,
-    2px var(--tile-base-y) 0 #356852,
-    3px var(--tile-cast-y) var(--tile-cast-blur) #001b2266;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tile.free:hover {
+    background: #fff9d9;
+    box-shadow:
+      0 0 0 2px #e4ca8c,
+      1px var(--tile-edge-y) 0 #b0a587,
+      2px var(--tile-base-y) 0 #356852,
+      3px var(--tile-cast-y) var(--tile-cast-blur) #001b2266;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .tile:focus,
+  .tile:focus-visible {
+    outline: none;
+  }
 }
 .tile.selected {
   background: #f6e3a8;
