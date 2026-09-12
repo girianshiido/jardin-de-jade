@@ -10,6 +10,7 @@
     "build": "vinext build",
     "build:pages": "vinext build && node scripts/export-pages.mjs",
     "start": "node scripts/serve.mjs",
+    "analyze:difficulty": "node --experimental-strip-types scripts/analyze-difficulty.ts",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint",

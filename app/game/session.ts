@@ -9,31 +9,57 @@ import {
   type Tile,
   type Pair,
 } from './engine.ts';
+import { validMedalRecord, type MedalRecord } from './medals.ts';
+import {
+  validComfort,
+  validDailyResults,
+  validLocalStats,
+  type ComfortSettings,
+  type DailyResults,
+  type LocalStats,
+} from './progress.ts';
 export const MAX_HINTS = 5;
 export const HINT_PENALTY_SECONDS = 10;
 export const MAX_SHUFFLES = 3;
 export const SHUFFLE_PENALTY_SECONDS = 30;
 export type Snapshot = { tiles: Tile[]; solution: Pair[]; moves: number };
 export type Session = Snapshot & {
+  mode: 'campaign' | 'daily';
+  dailyKey: string | null;
   level: number;
   seed: number;
   seconds: number;
   penaltySeconds: number;
   hints: number;
   shuffles: number;
+  undos: number;
+  completionRecorded: boolean;
   history: Snapshot[];
 };
 export type Action =
-  | { type: 'start'; level: number; seed: number }
+  | {
+      type: 'start';
+      level: number;
+      seed: number;
+      mode?: Session['mode'];
+      dailyKey?: string | null;
+    }
   | { type: 'match'; pair: Pair }
   | { type: 'undo' }
   | { type: 'hint' }
   | { type: 'shuffle'; seed: number }
   | { type: 'tick' }
   | { type: 'restore'; session: Session };
-export function newSession(level: number, seed: number): Session {
+export function newSession(
+  level: number,
+  seed: number,
+  mode: Session['mode'] = 'campaign',
+  dailyKey: string | null = null,
+): Session {
   const game = createGame(level, seed);
   return {
+    mode,
+    dailyKey: mode === 'daily' ? dailyKey : null,
     level,
     seed,
     tiles: game.tiles,
@@ -43,13 +69,20 @@ export function newSession(level: number, seed: number): Session {
     penaltySeconds: 0,
     hints: 0,
     shuffles: 0,
+    undos: 0,
+    completionRecorded: false,
     history: [],
   };
 }
 export function reducer(state: Session, action: Action): Session {
   switch (action.type) {
     case 'start':
-      return newSession(action.level, action.seed);
+      return newSession(
+        action.level,
+        action.seed,
+        action.mode,
+        action.dailyKey,
+      );
     case 'restore':
       return action.session;
     case 'tick':
@@ -77,6 +110,8 @@ export function reducer(state: Session, action: Action): Session {
         tiles,
         solution,
         moves: state.moves + 1,
+        completionRecorded:
+          state.completionRecorded || tiles.every((tile) => tile.removed),
         history: [
           ...state.history,
           { tiles: state.tiles, solution: state.solution, moves: state.moves },
@@ -86,7 +121,12 @@ export function reducer(state: Session, action: Action): Session {
     case 'undo': {
       const last = state.history.at(-1);
       if (!last) return state;
-      return { ...state, ...last, history: state.history.slice(0, -1) };
+      return {
+        ...state,
+        ...last,
+        undos: state.undos + 1,
+        history: state.history.slice(0, -1),
+      };
     }
     case 'shuffle': {
       if (state.shuffles >= MAX_SHUFFLES || state.tiles.every((t) => t.removed))
@@ -111,10 +151,15 @@ export function stars(session: Session) {
   return session.shuffles === 0 ? (session.hints === 0 ? 3 : 2) : 1;
 }
 export type Save = {
-  version: 4;
+  version: 6;
   session: Session;
   best: Record<string, number>;
   bestTimes: Record<string, number>;
+  medals: MedalRecord;
+  dailyResults: DailyResults;
+  stats: LocalStats;
+  comfort: ComfortSettings;
+  tutorialSeen: boolean;
   sound: boolean;
 };
 function validTiles(value: unknown): value is Tile[] {
@@ -200,13 +245,19 @@ export function readSave(raw: string | null): Save | null {
     const data = JSON.parse(raw) as Save;
     const s = data.session;
     if (
-      data.version !== 4 ||
+      data.version !== 6 ||
       !validSnapshot(s) ||
       !Number.isInteger(s.level) ||
       s.level < 0 ||
       s.level >= LEVELS.length ||
       !Number.isInteger(s.seed) ||
-      ![s.seconds, s.hints, s.shuffles, s.penaltySeconds].every(
+      typeof s.completionRecorded !== 'boolean' ||
+      !['campaign', 'daily'].includes(s.mode) ||
+      (s.mode === 'daily'
+        ? typeof s.dailyKey !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(s.dailyKey)
+        : s.dailyKey !== null) ||
+      ![s.seconds, s.hints, s.shuffles, s.undos, s.penaltySeconds].every(
         (n) => Number.isSafeInteger(n) && n >= 0,
       ) ||
       s.hints > MAX_HINTS ||
@@ -225,7 +276,12 @@ export function readSave(raw: string | null): Save | null {
       Array.isArray(data.best) ||
       !data.bestTimes ||
       typeof data.bestTimes !== 'object' ||
-      Array.isArray(data.bestTimes)
+      Array.isArray(data.bestTimes) ||
+      !validMedalRecord(data.medals) ||
+      !validDailyResults(data.dailyResults) ||
+      !validLocalStats(data.stats) ||
+      !validComfort(data.comfort) ||
+      typeof data.tutorialSeen !== 'boolean'
     )
       return null;
     const best: Record<string, number> = {};
@@ -247,8 +303,20 @@ export function readSave(raw: string | null): Save | null {
     for (const [key, value] of Object.entries(data.bestTimes))
       if (best[key] && Number.isSafeInteger(value) && value >= 0)
         bestTimes[key] = value;
-    if (!isLevelUnlocked(s.level, best)) return null;
-    return { version: 4, session: s, best, bestTimes, sound: data.sound };
+    if (Object.keys(data.medals).some((key) => !best[key])) return null;
+    if (s.mode === 'campaign' && !isLevelUnlocked(s.level, best)) return null;
+    return {
+      version: 6,
+      session: s,
+      best,
+      bestTimes,
+      medals: data.medals,
+      dailyResults: data.dailyResults,
+      stats: data.stats,
+      comfort: data.comfort,
+      tutorialSeen: data.tutorialSeen,
+      sound: data.sound,
+    };
   } catch {
     return null;
   }

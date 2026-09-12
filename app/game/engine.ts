@@ -7,32 +7,32 @@ export type Tile = {
   removed: boolean;
 };
 export type Pair = [number, number];
+export type GardenTheme = 'glade' | 'bamboo' | 'mist' | 'lantern' | 'palace';
 export type Level = {
   name: string;
   subtitle: string;
-  difficulty: string;
   family: string;
+  theme: GardenTheme;
+  variety: number;
   rank: number;
   requires: number[];
   layers: string[][];
 };
-export const LEVELS: Level[] = [
+const LEVEL_DEFINITIONS: Array<Omit<Level, 'rank' | 'requires'>> = [
   {
     name: 'Clairière I',
     subtitle: 'Les premiers pas',
-    difficulty: 'Découverte',
     family: 'Clairière',
-    rank: 1,
-    requires: [],
+    theme: 'glade',
+    variety: 5,
     layers: [['.####.', '######', '######', '.####.']],
   },
   {
     name: 'Clairière II',
     subtitle: 'Les îlots de mousse',
-    difficulty: 'Facile',
     family: 'Clairière',
-    rank: 2,
-    requires: [0],
+    theme: 'glade',
+    variety: 8,
     layers: [
       ['..##..##..', '.########.', '##########', '.########.', '..##..##..'],
       ['..........', '....##....', '....##....', '..........', '..........'],
@@ -41,10 +41,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Papillon I',
     subtitle: 'Deux ailes, un même cœur',
-    difficulty: 'Facile',
     family: 'Papillon',
-    rank: 2,
-    requires: [0],
+    theme: 'glade',
+    variety: 11,
     layers: [
       [
         '##.....##',
@@ -67,10 +66,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Pont de pierre I',
     subtitle: 'Deux rives à réunir',
-    difficulty: 'Intermédiaire',
     family: 'Pont de pierre',
-    rank: 3,
-    requires: [1],
+    theme: 'bamboo',
+    variety: 14,
     layers: [
       ['##....##', '###..###', '########', '########', '###..###', '##....##'],
       ['........', '........', '..####..', '..####..', '........', '........'],
@@ -79,10 +77,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Papillon II',
     subtitle: 'Les ailes se referment',
-    difficulty: 'Intermédiaire',
     family: 'Papillon',
-    rank: 3,
-    requires: [2],
+    theme: 'glade',
+    variety: 17,
     layers: [
       [
         '##.....##',
@@ -105,10 +102,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Serpent de bambou I',
     subtitle: 'Suivre le chemin',
-    difficulty: 'Intermédiaire',
     family: 'Serpent de bambou',
-    rank: 3,
-    requires: [3],
+    theme: 'bamboo',
+    variety: 20,
     layers: [
       [
         '######....',
@@ -133,10 +129,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Temple des lanternes I',
     subtitle: 'Quatre pavillons et un sanctuaire',
-    difficulty: 'Tactique',
     family: 'Temple des lanternes',
-    rank: 3,
-    requires: [4],
+    theme: 'lantern',
+    variety: 23,
     layers: [
       [
         '###....###',
@@ -163,10 +158,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Serpent de bambou II',
     subtitle: 'Le sentier se replie',
-    difficulty: 'Avancé',
     family: 'Serpent de bambou',
-    rank: 4,
-    requires: [5],
+    theme: 'bamboo',
+    variety: 26,
     layers: [
       [
         '########..',
@@ -195,10 +189,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Spirale de brume I',
     subtitle: 'Approcher le centre',
-    difficulty: 'Avancé',
     family: 'Spirale de brume',
-    rank: 4,
-    requires: [6],
+    theme: 'mist',
+    variety: 29,
     layers: [
       [
         '##########',
@@ -227,10 +220,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Temple des lanternes II',
     subtitle: 'Ouvrir le sanctuaire intérieur',
-    difficulty: 'Expert',
     family: 'Temple des lanternes',
-    rank: 4,
-    requires: [7, 8],
+    theme: 'lantern',
+    variety: 32,
     layers: [
       [
         '###....###',
@@ -273,10 +265,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Jardins suspendus I',
     subtitle: 'Des îles entre terre et ciel',
-    difficulty: 'Expert',
     family: 'Jardins suspendus',
-    rank: 5,
-    requires: [9],
+    theme: 'mist',
+    variety: 35,
     layers: [
       [
         '###....###',
@@ -313,10 +304,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Spirale de brume II',
     subtitle: 'Le cœur du tourbillon',
-    difficulty: 'Maître',
     family: 'Spirale de brume',
-    rank: 5,
-    requires: [9],
+    theme: 'mist',
+    variety: 38,
     layers: [
       [
         '##########',
@@ -359,10 +349,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Labyrinthe de jade',
     subtitle: 'Choisir avant d’ouvrir',
-    difficulty: 'Maître',
     family: 'Labyrinthe de jade',
-    rank: 5,
-    requires: [10],
+    theme: 'lantern',
+    variety: 38,
     layers: [
       [
         '####..####',
@@ -389,10 +378,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Jardins suspendus II',
     subtitle: 'Sept terrasses dans le vide',
-    difficulty: 'Maître',
     family: 'Jardins suspendus',
-    rank: 5,
-    requires: [11],
+    theme: 'mist',
+    variety: 38,
     layers: [
       [
         '###....###',
@@ -432,10 +420,9 @@ export const LEVELS: Level[] = [
   {
     name: 'Palais de jade',
     subtitle: 'Toutes les voies du jardin',
-    difficulty: 'Grand maître',
     family: 'Palais de jade',
-    rank: 6,
-    requires: [12, 13],
+    theme: 'palace',
+    variety: 38,
     layers: [
       [
         '####..####',
@@ -476,6 +463,33 @@ export const LEVELS: Level[] = [
     ],
   },
 ];
+
+// The visual layouts keep their own face variety while the campaign may evolve.
+// This lets us reorder the walk from the measured challenge without changing a
+// garden's character or invalidating its difficulty profile.
+const CAMPAIGN = [
+  { source: 0, rank: 1, requires: [] },
+  { source: 2, rank: 2, requires: [0] },
+  { source: 5, rank: 2, requires: [0] },
+  { source: 3, rank: 3, requires: [1] },
+  { source: 1, rank: 3, requires: [1, 2] },
+  { source: 4, rank: 3, requires: [1] },
+  { source: 8, rank: 3, requires: [2] },
+  { source: 6, rank: 4, requires: [3, 4] },
+  { source: 7, rank: 4, requires: [6] },
+  { source: 10, rank: 5, requires: [7] },
+  { source: 12, rank: 5, requires: [8] },
+  { source: 11, rank: 5, requires: [9] },
+  { source: 13, rank: 5, requires: [10] },
+  { source: 9, rank: 6, requires: [11, 12] },
+  { source: 14, rank: 7, requires: [13] },
+] as const;
+
+export const LEVELS: Level[] = CAMPAIGN.map(({ source, rank, requires }) => ({
+  ...LEVEL_DEFINITIONS[source],
+  rank,
+  requires: [...requires],
+}));
 export const FACES = [
   'dot-1',
   'dot-2',
@@ -693,7 +707,7 @@ export function createGame(level: number, seed: number) {
   const rng = random(seed);
   const variety = shuffled(FACE_PAIRS, rng).slice(
     0,
-    Math.min(FACE_PAIRS.length, 5 + level * 3),
+    Math.min(FACE_PAIRS.length, LEVELS[level].variety),
   );
   const regularRepeats = shuffled(
     REGULAR_FACES.map((face): FacePair => [face, face]),

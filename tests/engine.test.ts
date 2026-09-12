@@ -25,6 +25,25 @@ import {
   recordTime,
   SHUFFLE_PENALTY_SECONDS,
 } from '../app/game/session.ts';
+import { measureDifficulty } from '../app/game/difficulty.ts';
+import { DIFFICULTY_PROFILES } from '../app/game/difficulty-profile.ts';
+import { earnedMedals, recordMedals, targetTime } from '../app/game/medals.ts';
+import {
+  currentDailyStreak,
+  dailyChallenge,
+  DEFAULT_COMFORT,
+  EMPTY_STATS,
+  longestDailyStreak,
+  recordDaily,
+  recordLocalStats,
+} from '../app/game/progress.ts';
+
+const SAVE_EXTRAS = {
+  dailyResults: {},
+  stats: EMPTY_STATS,
+  comfort: DEFAULT_COMFORT,
+  tutorialSeen: true,
+};
 const tile = (id: number, x: number, y = 0, z = 0, face = 'east'): Tile => ({
   id,
   x,
@@ -162,11 +181,47 @@ void test('The redesigned campaign contains fifteen distinct silhouettes and val
   }
   assert.equal(signatures.size, LEVELS.length);
   assert.ok(new Set(LEVELS.map((level) => level.family)).size >= 8);
+  assert.equal(new Set(LEVELS.map((level) => level.theme)).size, 5);
+  assert.deepEqual(
+    LEVELS.map((level) => level.name),
+    [
+      'Clairière I',
+      'Papillon I',
+      'Serpent de bambou I',
+      'Pont de pierre I',
+      'Clairière II',
+      'Papillon II',
+      'Spirale de brume I',
+      'Temple des lanternes I',
+      'Serpent de bambou II',
+      'Jardins suspendus I',
+      'Labyrinthe de jade',
+      'Spirale de brume II',
+      'Jardins suspendus II',
+      'Temple des lanternes II',
+      'Palais de jade',
+    ],
+  );
   assert.deepEqual(LEVELS[0].requires, []);
   assert.deepEqual(LEVELS[1].requires, [0]);
   assert.deepEqual(LEVELS[2].requires, [0]);
-  assert.deepEqual(LEVELS[9].requires, [7, 8]);
-  assert.deepEqual(LEVELS[14].requires, [12, 13]);
+  assert.deepEqual(LEVELS[7].requires, [3, 4]);
+  assert.deepEqual(LEVELS[13].requires, [11, 12]);
+  assert.deepEqual(LEVELS[14].requires, [13]);
+});
+void test('Difficulty profiles come from playable deals and cover every garden', () => {
+  assert.equal(DIFFICULTY_PROFILES.length, LEVELS.length);
+  for (const profile of DIFFICULTY_PROFILES) {
+    assert.ok(profile.score >= 1 && profile.score <= 5);
+    assert.ok(profile.averageChoices >= 1);
+    assert.ok(profile.forcedMoveRate >= 0 && profile.forcedMoveRate <= 1);
+    assert.ok(profile.trapRate >= 0 && profile.trapRate <= 1);
+  }
+  const measured = measureDifficulty(0, 3);
+  assert.equal(measured.samples, 3);
+  assert.equal(measured.tiles, layout(0).length);
+  assert.equal(measured.label, 'Découverte');
+  assert.equal(measured.unresolvedChoices, 0);
 });
 void test('Invalid pairs never mutate a board', () => {
   const board = [tile(0, 0), tile(1, 1), tile(2, 2, 0, 0, 'red'), tile(3, 4)];
@@ -236,6 +291,7 @@ void test('Undo restores a match and a shuffle; restarting is deterministic', ()
   const restored = reducer(matched, { type: 'undo' });
   assert.deepEqual(restored.tiles, initial.tiles);
   assert.deepEqual(restored.solution, initial.solution);
+  assert.equal(restored.undos, 1);
   const mixed = reducer(matched, { type: 'shuffle', seed: 55 });
   assert.equal(mixed.shuffles, 1);
   assert.deepEqual(reducer(mixed, { type: 'undo' }).tiles, matched.tiles);
@@ -252,18 +308,24 @@ void test('Victory, time and stars follow play rather than device speed', () => 
   for (const pair of path) state = reducer(state, { type: 'match', pair });
   assert.equal(state.moves, 10);
   assert.ok(state.tiles.every((t) => t.removed));
+  assert.equal(state.completionRecorded, true);
   assert.equal(stars(state), 3);
   assert.equal(reducer(state, { type: 'tick' }), state);
   assert.equal(stars({ ...state, hints: 1 }), 2);
   assert.equal(stars({ ...state, shuffles: 1 }), 1);
+  const reopened = reducer(state, { type: 'undo' });
+  assert.equal(reopened.completionRecorded, true);
+  assert.ok(reopened.tiles.some((tile) => !tile.removed));
 });
 void test('Saved games round-trip and malformed saves are rejected', () => {
   const session = newSession(11, 73);
   const save = {
-    version: 4,
+    version: 6,
     session,
     best: Object.fromEntries(Array.from({ length: 11 }, (_, i) => [i, 3])),
     bestTimes: { 0: 88, 5: 120 },
+    medals: {},
+    ...SAVE_EXTRAS,
     sound: true,
   };
   assert.deepEqual(readSave(JSON.stringify(save)), save);
@@ -295,10 +357,12 @@ void test('Shuffles cost 30 seconds, stop after three uses, and undo never refun
   assert.equal(reducer(state, { type: 'shuffle', seed: 91 }), state);
   const resumed = readSave(
     JSON.stringify({
-      version: 4,
+      version: 6,
       session: state,
       best: Object.fromEntries(Array.from({ length: 8 }, (_, i) => [i, 3])),
       bestTimes: {},
+      medals: {},
+      ...SAVE_EXTRAS,
       sound: false,
     }),
   )!;
@@ -327,6 +391,8 @@ void test('A fresh campaign starts at level one and earlier formats cannot resto
   };
   assert.equal(readSave(JSON.stringify(old)), null);
   assert.equal(readSave(JSON.stringify({ ...old, version: 3 })), null);
+  assert.equal(readSave(JSON.stringify({ ...old, version: 4 })), null);
+  assert.equal(readSave(JSON.stringify({ ...old, version: 5 })), null);
   for (let level = 0; level < LEVELS.length; level++)
     assert.equal(isLevelUnlocked(level, {}), level === 0);
   const best: Record<string, number> = {};
@@ -336,24 +402,28 @@ void test('A fresh campaign starts at level one and earlier formats cannot resto
   }
   assert.equal(isLevelUnlocked(1, { 0: 1 }), true);
   assert.equal(isLevelUnlocked(2, { 0: 1 }), true);
-  assert.equal(isLevelUnlocked(9, { 7: 1 }), false);
-  assert.equal(isLevelUnlocked(9, { 7: 1, 8: 1 }), true);
+  assert.equal(isLevelUnlocked(7, { 3: 1 }), false);
+  assert.equal(isLevelUnlocked(7, { 3: 1, 4: 1 }), true);
   assert.equal(isLevelUnlocked(-1, best), false);
   assert.equal(isLevelUnlocked(LEVELS.length, best), false);
   assert.equal(isLevelUnlocked(3, { 2: 3 }), false);
   const invalid = {
-    version: 4,
+    version: 6,
     session: newSession(3, 41),
     best: { 2: 3 },
     bestTimes: {},
+    medals: {},
+    ...SAVE_EXTRAS,
     sound: false,
   };
   assert.equal(readSave(JSON.stringify(invalid)), null);
   const disconnected = {
-    version: 4,
+    version: 6,
     session: newSession(0, 42),
     best: { 0: 3, 9: 2 },
     bestTimes: {},
+    medals: {},
+    ...SAVE_EXTRAS,
     sound: true,
   };
   assert.equal(readSave(JSON.stringify(disconnected)), null);
@@ -374,10 +444,12 @@ void test('Hints stop after five uses and cost ten seconds each, even after undo
   assert.equal(state.seconds, 50);
   const resumed = readSave(
     JSON.stringify({
-      version: 4,
+      version: 6,
       session: state,
       best: {},
       bestTimes: {},
+      medals: {},
+      ...SAVE_EXTRAS,
       sound: true,
     }),
   )!;
@@ -415,10 +487,12 @@ void test('Only completed games establish records; penalties count and slower wi
   assert.equal(reducer(state, { type: 'hint' }), state);
   const saved = readSave(
     JSON.stringify({
-      version: 4,
+      version: 6,
       session: state,
       best: { 0: 1 },
       bestTimes: first,
+      medals: {},
+      ...SAVE_EXTRAS,
       sound: false,
     }),
   )!;
@@ -426,4 +500,55 @@ void test('Only completed games establish records; penalties count and slower wi
   assert.equal(isLevelUnlocked(1, saved.best), true);
   const replay = { ...saved, session: newSession(0, 50) };
   assert.deepEqual(readSave(JSON.stringify(replay))!.bestTimes, { 0: 40 });
+});
+
+void test('Secondary medals reward four independent ways to complete a garden', () => {
+  let perfect = newSession(0, 91);
+  perfect = { ...perfect, seconds: targetTime(0) };
+  for (const pair of perfect.solution)
+    perfect = reducer(perfect, { type: 'match', pair });
+  assert.deepEqual(earnedMedals(perfect), [
+    'clear-sight',
+    'still-water',
+    'swift-step',
+    'sure-path',
+  ]);
+  const assisted = {
+    ...perfect,
+    hints: 1,
+    shuffles: 1,
+    seconds: targetTime(0) + 1,
+    undos: 1,
+  };
+  assert.deepEqual(earnedMedals(assisted), []);
+  const recorded = recordMedals({}, perfect);
+  assert.deepEqual(recorded[0], earnedMedals(perfect));
+  assert.equal(recordMedals(recorded, assisted), recorded);
+});
+
+void test('The daily challenge is deterministic and records streaks locally', () => {
+  const date = new Date(2026, 8, 11, 8);
+  const challenge = dailyChallenge(date);
+  assert.deepEqual(challenge, dailyChallenge(new Date(2026, 8, 11, 23)));
+  assert.notDeepEqual(challenge, dailyChallenge(new Date(2026, 8, 12, 8)));
+  let daily = newSession(
+    challenge.level,
+    challenge.seed,
+    'daily',
+    challenge.key,
+  );
+  for (const pair of daily.solution)
+    daily = reducer(daily, { type: 'match', pair });
+  const records = recordDaily({}, daily);
+  assert.equal(records[challenge.key].bestTime, 0);
+  assert.equal(records[challenge.key].bestStars, 3);
+  assert.equal(records[challenge.key].completions, 1);
+  const consecutive = {
+    ...records,
+    '2026-09-09': { bestTime: 50, bestStars: 2, completions: 1 },
+    '2026-09-10': { bestTime: 40, bestStars: 3, completions: 1 },
+  };
+  assert.equal(currentDailyStreak(consecutive, date), 3);
+  assert.equal(longestDailyStreak(consecutive), 3);
+  assert.equal(recordLocalStats(EMPTY_STATS, daily).completedGames, 1);
 });
