@@ -1,4 +1,4 @@
-import { LEVELS } from './engine.ts';
+import { CORE_LEVEL_COUNT } from './engine.ts';
 import type { Session } from './session.ts';
 
 export type ComfortSettings = {
@@ -60,7 +60,7 @@ export function dateFromKey(key: string) {
 
 export function dailyChallenge(date = new Date()) {
   const key = localDateKey(date);
-  const level = 2 + (hashText(`garden:${key}`) % (LEVELS.length - 2));
+  const level = 2 + (hashText(`garden:${key}`) % (CORE_LEVEL_COUNT - 2));
   const seed = (hashText(`jade:${key}`) % 2147483646) + 1;
   return { key, level, seed };
 }

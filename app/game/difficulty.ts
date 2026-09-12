@@ -10,6 +10,8 @@ import type { DifficultyLabel } from './difficulty-profile.ts';
 
 export const DIFFICULTY_SAMPLE_COUNT = 20;
 export const DIFFICULTY_SEARCH_BUDGET = 5_000;
+export const EXPERT_SEARCH_BUDGET = 500;
+export const EXPERT_CHOICE_SAMPLE = 8;
 
 export type DifficultyMetrics = {
   level: number;
@@ -107,6 +109,15 @@ function removeFromMask(mask: bigint, pair: Pair) {
   return mask & ~bit(pair[0]) & ~bit(pair[1]);
 }
 
+function sampledPairs(pairs: Pair[], expert: boolean) {
+  if (!expert || pairs.length <= EXPERT_CHOICE_SAMPLE) return pairs;
+  return Array.from(
+    { length: EXPERT_CHOICE_SAMPLE },
+    (_, index) =>
+      pairs[Math.floor((index * pairs.length) / EXPERT_CHOICE_SAMPLE)],
+  );
+}
+
 function canSolve(
   mask: bigint,
   topology: Topology,
@@ -191,9 +202,11 @@ export function measureDifficulty(
       steps++;
       choices += pairs.length;
       if (pairs.length === 1) forcedMoves++;
-      for (const pair of pairs) {
+      for (const pair of sampledPairs(pairs, LEVELS[level].expert)) {
         const result = canSolve(removeFromMask(mask, pair), topology, memo, {
-          nodes: DIFFICULTY_SEARCH_BUDGET,
+          nodes: LEVELS[level].expert
+            ? EXPERT_SEARCH_BUDGET
+            : DIFFICULTY_SEARCH_BUDGET,
         });
         if (result === 'solvable') safeChoices++;
         else if (result === 'dead-end') trapChoices++;

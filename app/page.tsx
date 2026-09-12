@@ -48,6 +48,7 @@ import {
   freeTiles,
   matchingPairs,
   LEVELS,
+  CORE_LEVEL_COUNT,
   boardBounds,
   layout,
   isFree,
@@ -60,11 +61,11 @@ import {
   reducer,
   readSave,
   stars,
-  MAX_SHUFFLES,
   MAX_HINTS,
   HINT_PENALTY_SECONDS,
   isLevelUnlocked,
   recordTime,
+  shuffleLimit,
   SHUFFLE_PENALTY_SECONDS,
   type Save,
 } from './game/session';
@@ -403,7 +404,8 @@ export default function Home() {
   const pairs = useMemo(() => matchingPairs(game.tiles), [game.tiles]);
   const freeIds = new Set(free.map((t) => t.id));
   const remaining = game.tiles.filter((t) => !t.removed).length;
-  const shufflesLeft = Math.max(0, MAX_SHUFFLES - game.shuffles);
+  const shufflesAllowed = shuffleLimit(game.level);
+  const shufflesLeft = Math.max(0, shufflesAllowed - game.shuffles);
   const hintsLeft = Math.max(0, MAX_HINTS - game.hints);
   const won = remaining === 0;
   const bounds = boardBounds(game.tiles);
@@ -423,6 +425,10 @@ export default function Home() {
     victory ||
     (!!vanishing && remaining === 2);
   const completeCount = Object.keys(best).length;
+  const coreCompleteCount = Object.keys(best).filter(
+    (key) => Number(key) < CORE_LEVEL_COUNT,
+  ).length;
+  const expertCompleteCount = completeCount - coreCompleteCount;
   const completedBest = isDaily ? best : { ...best, [game.level]: stars(game) };
   const newlyUnlocked = isDaily
     ? []
@@ -809,7 +815,7 @@ export default function Home() {
           <p className="title-kicker">MAHJONG SOLITAIRE</p>
           <h1>Jardin de Jade</h1>
           <p className="title-intro">
-            Libérez les tuiles et cheminez à travers quinze jardins.
+            Libérez les tuiles à travers quinze jardins et cinq défis experts.
           </p>
           <div className="title-menu">
             {hasJourney && !won && (
@@ -1114,7 +1120,7 @@ export default function Home() {
               <Shuffle />
               <span>Mélanger</span>
               <small className="shuffle-cost">
-                {shufflesLeft}/{MAX_SHUFFLES} · +{SHUFFLE_PENALTY_SECONDS} s
+                {shufflesLeft}/{shufflesAllowed} · +{SHUFFLE_PENALTY_SECONDS} s
               </small>
             </button>
             <button onClick={() => setPanel('levels')}>
@@ -1191,8 +1197,21 @@ export default function Home() {
               </div>
               {CAMPAIGN_STAGES.map(({ rank, rows }) => (
                 <section className="level-stage" data-rank={rank} key={rank}>
+                  {rank === 8 && (
+                    <div className="expert-chapter">
+                      <Trophy />
+                      <span>
+                        <strong>Le sentier du dragon</strong>
+                        <small>
+                          Parcours expert facultatif · un seul mélange par défi
+                        </small>
+                      </span>
+                    </div>
+                  )}
                   <div className="stage-marker">
-                    <span>ÉTAPE {rank}</span>
+                    <span>
+                      {rank >= 8 ? `DÉFI ${rank - 7}` : `ÉTAPE ${rank}`}
+                    </span>
                     <i aria-hidden="true" />
                   </div>
                   {rows.map((row, rowIndex) => (
@@ -1201,6 +1220,7 @@ export default function Home() {
                         <button
                           key={l.name}
                           data-theme={l.theme}
+                          data-expert={l.expert}
                           className={`level-card ${i === game.level ? 'current' : ''} ${!isLevelUnlocked(i, best) ? 'locked' : ''}`}
                           disabled={!isLevelUnlocked(i, best)}
                           onClick={() =>
@@ -1324,13 +1344,15 @@ export default function Home() {
                 className="progress-ring"
                 style={
                   {
-                    '--progress': `${(completeCount / LEVELS.length) * 360}deg`,
+                    '--progress': `${(coreCompleteCount / CORE_LEVEL_COUNT) * 360}deg`,
                   } as CSSProperties
                 }
               >
                 <span>
-                  <b>{Math.round((completeCount / LEVELS.length) * 100)}%</b>
-                  campagne
+                  <b>
+                    {Math.round((coreCompleteCount / CORE_LEVEL_COUNT) * 100)}%
+                  </b>
+                  promenade
                 </span>
               </div>
               <div className="stats-grid">
@@ -1354,6 +1376,12 @@ export default function Home() {
                 </span>
                 <span>
                   <b>{Object.keys(dailyResults).length}</b>Défis quotidiens
+                </span>
+                <span>
+                  <b>
+                    {expertCompleteCount}/{LEVELS.length - CORE_LEVEL_COUNT}
+                  </b>
+                  Défis experts
                 </span>
               </div>
               <div className="streak-summary">
@@ -1479,10 +1507,12 @@ export default function Home() {
                 chacun. Les pénalités et utilisations restent consommées après
                 une annulation.
                 <br />
-                {MAX_SHUFFLES} mélanges par partie, +{SHUFFLE_PENALTY_SECONDS}{' '}
-                secondes chacun. Annuler conserve la pénalité et ne rend pas de
-                mélange. Recommencer une partie réinitialise le quota et le
-                temps.
+                Le quota de mélanges diminue avec la promenade : 3 dans les cinq
+                premiers jardins, 2 dans les cinq suivants, puis 1 à partir du
+                onzième jardin et dans le parcours expert. Chaque mélange ajoute{' '}
+                {SHUFFLE_PENALTY_SECONDS} secondes. Annuler conserve la pénalité
+                et ne rend pas de mélange. Recommencer une partie réinitialise
+                le quota et le temps.
               </p>
               <p className="keyboard-note">
                 Clavier : Tab ou flèches pour parcourir les tuiles libres,

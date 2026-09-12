@@ -16,9 +16,10 @@ export type Level = {
   variety: number;
   rank: number;
   requires: number[];
+  expert: boolean;
   layers: string[][];
 };
-const LEVEL_DEFINITIONS: Array<Omit<Level, 'rank' | 'requires'>> = [
+const LEVEL_DEFINITIONS: Array<Omit<Level, 'rank' | 'requires' | 'expert'>> = [
   {
     name: 'Clairière I',
     subtitle: 'Les premiers pas',
@@ -462,34 +463,268 @@ const LEVEL_DEFINITIONS: Array<Omit<Level, 'rank' | 'requires'>> = [
       ],
     ],
   },
+  {
+    name: 'Porte du dragon',
+    subtitle: 'Deux bastions gardent le passage',
+    family: 'Défis du dragon',
+    theme: 'palace',
+    variety: 32,
+    layers: [
+      [
+        '####....####',
+        '#####..#####',
+        '############',
+        '###.####.###',
+        '############',
+        '#####..#####',
+        '####....####',
+      ],
+      [
+        '.###....###.',
+        '..##....##..',
+        '...######...',
+        '....####....',
+        '...######...',
+        '..##....##..',
+        '.###....###.',
+      ],
+      [
+        '............',
+        '............',
+        '....####....',
+        '.....##.....',
+        '....####....',
+        '............',
+        '............',
+      ],
+      [
+        '............',
+        '............',
+        '............',
+        '.....##.....',
+        '............',
+        '............',
+        '............',
+      ],
+    ],
+  },
+  {
+    name: 'Couronne de bambou',
+    subtitle: 'La voie extérieure protège le centre',
+    family: 'Défis du dragon',
+    theme: 'bamboo',
+    variety: 32,
+    layers: [
+      [
+        '..########..',
+        '.##########.',
+        '####....####',
+        '###......###',
+        '###......###',
+        '####....####',
+        '.##########.',
+        '..########..',
+      ],
+      [
+        '...######...',
+        '..########..',
+        '###......###',
+        '##........##',
+        '##........##',
+        '###......###',
+        '..########..',
+        '...######...',
+      ],
+      [
+        '............',
+        '....####....',
+        '............',
+        '............',
+        '............',
+        '............',
+        '....####....',
+        '............',
+      ],
+    ],
+  },
+  {
+    name: 'Échiquier de brume',
+    subtitle: 'Chaque îlot dissimule une décision',
+    family: 'Défis du dragon',
+    theme: 'mist',
+    variety: 32,
+    layers: [
+      [
+        '####..####..',
+        '####..####..',
+        '..####..####',
+        '..####..####',
+        '####..####..',
+        '####..####..',
+        '..####..####',
+        '..####..####',
+      ],
+      [
+        '.##....##...',
+        '.##....##...',
+        '...##....##.',
+        '...##....##.',
+        '.##....##...',
+        '.##....##...',
+        '...##....##.',
+        '...##....##.',
+      ],
+      [
+        '.#.....#....',
+        '.#.....#....',
+        '...#.....#..',
+        '...#.....#..',
+        '.#.....#....',
+        '.#.....#....',
+        '...#.....#..',
+        '...#.....#..',
+      ],
+      [
+        '............',
+        '.#..........',
+        '.........#..',
+        '............',
+        '............',
+        '.#..........',
+        '.........#..',
+        '............',
+      ],
+    ],
+  },
+  {
+    name: 'Trône céleste',
+    subtitle: 'Le dernier chemin ne pardonne aucun détour',
+    family: 'Défis du dragon',
+    theme: 'lantern',
+    variety: 32,
+    layers: [
+      [
+        '##########',
+        '###....###',
+        '##########',
+        '##......##',
+        '##########',
+        '##......##',
+        '###....###',
+        '##########',
+      ],
+      [
+        '.########.',
+        '.##....##.',
+        '..######..',
+        '.#......#.',
+        '..######..',
+        '.#......#.',
+        '.##....##.',
+        '.########.',
+      ],
+      [
+        '...####...',
+        '..#....#..',
+        '...####...',
+        '..........',
+        '...####...',
+        '..........',
+        '..#....#..',
+        '...####...',
+      ],
+    ],
+  },
+  {
+    name: 'Rosace céleste',
+    subtitle: 'Lire les pétales avant de choisir',
+    family: 'Défis du dragon',
+    theme: 'palace',
+    variety: 32,
+    layers: [
+      [
+        '##..####..##',
+        '###.####.###',
+        '.##########.',
+        '###..##..###',
+        '############',
+        '###..##..###',
+        '.##########.',
+        '###.####.###',
+        '##..####..##',
+      ],
+      [
+        '....####....',
+        '.....##.....',
+        '...######...',
+        '.....##.....',
+        '....####....',
+        '.....##.....',
+        '...######...',
+        '.....##.....',
+        '....####....',
+      ],
+      [
+        '............',
+        '............',
+        '............',
+        '............',
+        '.....##.....',
+        '............',
+        '............',
+        '............',
+        '............',
+      ],
+      [
+        '............',
+        '............',
+        '............',
+        '............',
+        '.....##.....',
+        '............',
+        '............',
+        '............',
+        '............',
+      ],
+    ],
+  },
 ];
 
 // The visual layouts keep their own face variety while the campaign may evolve.
 // This lets us reorder the walk from the measured challenge without changing a
 // garden's character or invalidating its difficulty profile.
 const CAMPAIGN = [
-  { source: 0, rank: 1, requires: [] },
-  { source: 2, rank: 2, requires: [0] },
-  { source: 5, rank: 2, requires: [0] },
-  { source: 3, rank: 3, requires: [1] },
-  { source: 1, rank: 3, requires: [1, 2] },
-  { source: 4, rank: 3, requires: [1] },
-  { source: 8, rank: 3, requires: [2] },
-  { source: 6, rank: 4, requires: [3, 4] },
-  { source: 7, rank: 4, requires: [6] },
-  { source: 10, rank: 5, requires: [7] },
-  { source: 12, rank: 5, requires: [8] },
-  { source: 11, rank: 5, requires: [9] },
-  { source: 13, rank: 5, requires: [10] },
-  { source: 9, rank: 6, requires: [11, 12] },
-  { source: 14, rank: 7, requires: [13] },
+  { source: 0, rank: 1, requires: [], expert: false },
+  { source: 2, rank: 2, requires: [0], expert: false },
+  { source: 5, rank: 2, requires: [0], expert: false },
+  { source: 3, rank: 3, requires: [1], expert: false },
+  { source: 1, rank: 3, requires: [1, 2], expert: false },
+  { source: 4, rank: 3, requires: [1], expert: false },
+  { source: 8, rank: 3, requires: [2], expert: false },
+  { source: 6, rank: 4, requires: [3, 4], expert: false },
+  { source: 7, rank: 4, requires: [6], expert: false },
+  { source: 10, rank: 5, requires: [7], expert: false },
+  { source: 12, rank: 5, requires: [8], expert: false },
+  { source: 11, rank: 5, requires: [9], expert: false },
+  { source: 13, rank: 5, requires: [10], expert: false },
+  { source: 9, rank: 6, requires: [11, 12], expert: false },
+  { source: 14, rank: 7, requires: [13], expert: false },
+  { source: 19, rank: 8, requires: [14], expert: true },
+  { source: 17, rank: 8, requires: [14], expert: true },
+  { source: 15, rank: 9, requires: [15], expert: true },
+  { source: 16, rank: 9, requires: [16], expert: true },
+  { source: 18, rank: 10, requires: [17, 18], expert: true },
 ] as const;
 
-export const LEVELS: Level[] = CAMPAIGN.map(({ source, rank, requires }) => ({
-  ...LEVEL_DEFINITIONS[source],
-  rank,
-  requires: [...requires],
-}));
+export const CORE_LEVEL_COUNT = 15;
+export const LEVELS: Level[] = CAMPAIGN.map(
+  ({ source, rank, requires, expert }) => ({
+    ...LEVEL_DEFINITIONS[source],
+    rank,
+    requires: [...requires],
+    expert,
+  }),
+);
 export const FACES = [
   'dot-1',
   'dot-2',
@@ -705,6 +940,23 @@ export function deal(tiles: Tile[], facePairs: FacePair[], rng: () => number) {
 export function createGame(level: number, seed: number) {
   const tiles = layout(level);
   const rng = random(seed);
+  if (LEVELS[level].expert) {
+    const pairCount = tiles.length / 2;
+    const bonusPairs = shuffled(
+      FACE_PAIRS.filter(([first, second]) => first !== second),
+      rng,
+    );
+    const regularPairCount = pairCount - bonusPairs.length;
+    const regularPairs = shuffled(
+      REGULAR_FACES.map((face): FacePair => [face, face]),
+      rng,
+    ).slice(0, Math.ceil(regularPairCount / 2));
+    const standardSet = [...bonusPairs, ...regularPairs, ...regularPairs].slice(
+      0,
+      pairCount,
+    );
+    return deal(tiles, standardSet, rng);
+  }
   const variety = shuffled(FACE_PAIRS, rng).slice(
     0,
     Math.min(FACE_PAIRS.length, LEVELS[level].variety),

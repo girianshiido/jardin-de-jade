@@ -22,6 +22,11 @@ export const MAX_HINTS = 5;
 export const HINT_PENALTY_SECONDS = 10;
 export const MAX_SHUFFLES = 3;
 export const SHUFFLE_PENALTY_SECONDS = 30;
+export function shuffleLimit(level: number) {
+  if (level < 5) return 3;
+  if (level < 10) return 2;
+  return 1;
+}
 export type Snapshot = { tiles: Tile[]; solution: Pair[]; moves: number };
 export type Session = Snapshot & {
   mode: 'campaign' | 'daily';
@@ -129,7 +134,10 @@ export function reducer(state: Session, action: Action): Session {
       };
     }
     case 'shuffle': {
-      if (state.shuffles >= MAX_SHUFFLES || state.tiles.every((t) => t.removed))
+      if (
+        state.shuffles >= shuffleLimit(state.level) ||
+        state.tiles.every((t) => t.removed)
+      )
         return state;
       const game = reshuffle(state.tiles, action.seed);
       return {

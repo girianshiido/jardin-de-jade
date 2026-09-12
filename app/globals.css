@@ -863,6 +863,38 @@ footer {
 .campaign-compass svg {
   width: 20px;
 }
+.expert-chapter {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 13px;
+  width: min(430px, 92%);
+  margin: 28px auto 14px;
+  padding: 14px 17px;
+  border: 1px solid #edcb737d;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #4b2943d9, #183d34ed);
+  box-shadow: 0 14px 34px #00171980;
+}
+.expert-chapter > svg {
+  flex: 0 0 auto;
+  color: #f0cd73;
+}
+.expert-chapter > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.expert-chapter strong {
+  color: #f2dfaa;
+  font:
+    18px Georgia,
+    serif;
+}
+.expert-chapter small {
+  color: #c9d2bf;
+  font-size: 11px;
+}
 .level-stage {
   position: relative;
   z-index: 1;
@@ -963,6 +995,25 @@ footer {
   box-shadow:
     0 0 0 2px #e9cf8830,
     0 10px 28px #00191480;
+}
+.level-card[data-expert='true'] {
+  border-color: color-mix(in srgb, var(--card-accent) 72%, transparent);
+  box-shadow:
+    inset 0 0 0 1px #f0cf6f12,
+    0 10px 26px #00161678;
+}
+.level-card[data-expert='true']::after {
+  position: absolute;
+  top: 13px;
+  right: 42px;
+  padding: 3px 6px;
+  border: 1px solid #d8bd6b50;
+  border-radius: 10px;
+  content: 'EXPERT';
+  color: #dfc777;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 .level-card-number {
   display: flex;

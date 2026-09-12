@@ -8,6 +8,7 @@ import {
   reshuffle,
   random,
   LEVELS,
+  CORE_LEVEL_COUNT,
   layout,
   FACES,
   facesMatch,
@@ -23,6 +24,7 @@ import {
   HINT_PENALTY_SECONDS,
   isLevelUnlocked,
   recordTime,
+  shuffleLimit,
   SHUFFLE_PENALTY_SECONDS,
 } from '../app/game/session.ts';
 import { measureDifficulty } from '../app/game/difficulty.ts';
@@ -131,7 +133,7 @@ void test('The complete Mahjong collection is available with traditional bonus m
     new Set(FACES),
   );
 });
-void test('All fifteen levels and 750 deals can be cleared using their legal certificate', () => {
+void test('All twenty levels and 1000 deals can be cleared using their legal certificate', () => {
   let checked = 0;
   for (let level = 0; level < LEVELS.length; level++)
     for (let seed = 1; seed <= 50; seed++) {
@@ -157,10 +159,13 @@ void test('All fifteen levels and 750 deals can be cleared using their legal cer
       assert.ok(board.every((t) => t.removed));
       assert.ok(game.tiles.every((t) => FACES.includes(t.face)));
     }
-  console.log(`Verified ${checked} legal pair removals across 750 deals.`);
+  console.log(`Verified ${checked} legal pair removals across 1000 deals.`);
 });
-void test('The redesigned campaign contains fifteen distinct silhouettes and valid stacks', () => {
-  assert.equal(LEVELS.length, 15);
+void test('The campaign and optional expert path contain twenty distinct valid silhouettes', () => {
+  assert.equal(LEVELS.length, 20);
+  assert.equal(LEVELS.filter((level) => level.expert).length, 5);
+  assert.ok(LEVELS.slice(0, CORE_LEVEL_COUNT).every((level) => !level.expert));
+  assert.ok(LEVELS.slice(CORE_LEVEL_COUNT).every((level) => level.expert));
   const signatures = new Set<string>();
   for (let level = 0; level < LEVELS.length; level++) {
     const tiles = layout(level);
@@ -200,6 +205,11 @@ void test('The redesigned campaign contains fifteen distinct silhouettes and val
       'Jardins suspendus II',
       'Temple des lanternes II',
       'Palais de jade',
+      'Rosace céleste',
+      'Échiquier de brume',
+      'Porte du dragon',
+      'Couronne de bambou',
+      'Trône céleste',
     ],
   );
   assert.deepEqual(LEVELS[0].requires, []);
@@ -208,6 +218,24 @@ void test('The redesigned campaign contains fifteen distinct silhouettes and val
   assert.deepEqual(LEVELS[7].requires, [3, 4]);
   assert.deepEqual(LEVELS[13].requires, [11, 12]);
   assert.deepEqual(LEVELS[14].requires, [13]);
+  assert.deepEqual(LEVELS[15].requires, [14]);
+  assert.deepEqual(LEVELS[16].requires, [14]);
+  assert.deepEqual(LEVELS[19].requires, [17, 18]);
+  for (let level = CORE_LEVEL_COUNT; level < LEVELS.length; level++) {
+    const counts = new Map<string, number>();
+    for (const tile of createGame(level, 97).tiles)
+      counts.set(tile.face, (counts.get(tile.face) ?? 0) + 1);
+    for (const [face, count] of counts)
+      if (face.startsWith('flower-') || face.startsWith('season-'))
+        assert.equal(count, 1, `${face} duplicated in ${LEVELS[level].name}`);
+      else {
+        assert.ok(
+          count <= 4,
+          `${face} overrepresented in ${LEVELS[level].name}`,
+        );
+        assert.equal(count % 2, 0);
+      }
+  }
 });
 void test('Difficulty profiles come from playable deals and cover every garden', () => {
   assert.equal(DIFFICULTY_PROFILES.length, LEVELS.length);
@@ -222,6 +250,28 @@ void test('Difficulty profiles come from playable deals and cover every garden',
   assert.equal(measured.tiles, layout(0).length);
   assert.equal(measured.label, 'Découverte');
   assert.equal(measured.unresolvedChoices, 0);
+});
+void test('Expert gardens punish unguided matching while keeping a certified solution', () => {
+  const winRates: number[] = [];
+  for (let level = CORE_LEVEL_COUNT; level < LEVELS.length; level++) {
+    let wins = 0;
+    let runs = 0;
+    for (let seed = 1; seed <= 10; seed++)
+      for (let attempt = 0; attempt < 10; attempt++) {
+        let board = createGame(level, seed).tiles;
+        const rng = random(seed * 1009 + attempt * 37);
+        while (true) {
+          const pairs = matchingPairs(board);
+          if (!pairs.length) break;
+          board = removePair(board, pairs[Math.floor(rng() * pairs.length)]);
+        }
+        wins += Number(board.every((tile) => tile.removed));
+        runs++;
+      }
+    winRates.push(wins / runs);
+  }
+  assert.ok(winRates.every((rate) => rate < 0.8));
+  assert.ok(winRates.at(-1)! < 0.55);
 });
 void test('Invalid pairs never mutate a board', () => {
   const board = [tile(0, 0), tile(1, 1), tile(2, 2, 0, 0, 'red'), tile(3, 4)];
@@ -341,8 +391,12 @@ void test('Saved games round-trip and malformed saves are rejected', () => {
     assert.equal(readSave(raw), null);
 });
 
-void test('Shuffles cost 30 seconds, stop after three uses, and undo never refunds them', () => {
-  let state = reducer(newSession(8, 42), { type: 'tick' });
+void test('Shuffles cost 30 seconds, follow the progressive quota, and undo never refunds them', () => {
+  assert.deepEqual(
+    [0, 4, 5, 9, 10, 14, 15, 19].map(shuffleLimit),
+    [3, 3, 2, 2, 1, 1, 1, 1],
+  );
+  let state = reducer(newSession(0, 42), { type: 'tick' });
   for (let used = 1; used <= MAX_SHUFFLES; used++) {
     const previous = state;
     state = reducer(state, { type: 'shuffle', seed: used });
@@ -372,7 +426,7 @@ void test('Shuffles cost 30 seconds, stop after three uses, and undo never refun
     reducer(resumed.session, { type: 'shuffle', seed: 12 }),
     resumed.session,
   );
-  const restarted = reducer(state, { type: 'start', level: 8, seed: 42 });
+  const restarted = reducer(state, { type: 'start', level: 0, seed: 42 });
   assert.equal(restarted.shuffles, 0);
   assert.equal(restarted.seconds, 0);
   assert.equal(restarted.penaltySeconds, 0);
@@ -380,6 +434,14 @@ void test('Shuffles cost 30 seconds, stop after three uses, and undo never refun
   for (const pair of completed.solution)
     completed = reducer(completed, { type: 'match', pair });
   assert.equal(reducer(completed, { type: 'shuffle', seed: 92 }), completed);
+
+  let middle = newSession(6, 82);
+  middle = reducer(middle, { type: 'shuffle', seed: 1 });
+  middle = reducer(middle, { type: 'shuffle', seed: 2 });
+  assert.equal(reducer(middle, { type: 'shuffle', seed: 3 }), middle);
+  let expert = newSession(15, 83);
+  expert = reducer(expert, { type: 'shuffle', seed: 1 });
+  assert.equal(reducer(expert, { type: 'shuffle', seed: 2 }), expert);
 });
 
 void test('A fresh campaign starts at level one and earlier formats cannot restore old progress', () => {
@@ -531,6 +593,7 @@ void test('The daily challenge is deterministic and records streaks locally', ()
   const challenge = dailyChallenge(date);
   assert.deepEqual(challenge, dailyChallenge(new Date(2026, 8, 11, 23)));
   assert.notDeepEqual(challenge, dailyChallenge(new Date(2026, 8, 12, 8)));
+  assert.ok(challenge.level < CORE_LEVEL_COUNT);
   let daily = newSession(
     challenge.level,
     challenge.seed,

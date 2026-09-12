@@ -1,4 +1,4 @@
-const CACHE = 'jardin-de-jade-v6';
+const CACHE = 'jardin-de-jade-v7';
 const ROOT = new URL('./', self.registration.scope).href;
 const CORE = [
   ROOT,
